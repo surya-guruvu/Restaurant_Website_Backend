@@ -1,7 +1,7 @@
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
-var cookieParser = require('cookie-parser');
+var cookieParser = require('cookie-parser');  //already
 var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
@@ -33,7 +33,61 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser('12345-678890-09876-54321')); //secret key,used by our cookie to encrypt the information sent fron source to client
+
+function auth(req,res,next){
+  //console.log(req.headers);
+  console.log(req.signedCookies);
+
+
+  //user field is not present in signed cookie,means the user has not authenticated yet.we expect the user to authenticate himeself.
+  if(!req.signedCookies.user){
+
+    var authHeader= req.headers.authorization;
+
+    if(!authHeader){
+      var err=new Error('You are not authenticated');
+      res.setHeader('WWW-authenticate','Basic');
+      err.status=401;
+      next(err);
+      return;
+    }
+    var auth= new Buffer.from(authHeader.split(' ')[1],'base64').toString().split(':');   //(Basic ..............) in authHeader
+    var user=auth[0];
+    var pass=auth[1];
+
+    if(user=='admin' && pass=='password'){ //Just for now at this stage,this is default
+      res.cookie('user','admin',{signed:true}); //setting the user name as admin
+      next() //authorized and passing to next middle ware.
+    }  
+    else{
+      var err=new Error('You are not authenticated');
+      res.setHeader('WWW-authenticate','Basic');
+      err.status=401;
+      next(err);
+      return;
+    }
+  }
+  else{
+    if(req.signedCookies.user=='admin'){
+      next();
+    }
+    else{  //the cookie is not valid,this generally doesn't happen. We just added for completeness.
+      var err=new Error('You are not authenticated');
+
+      err.status=401;
+      next(err);
+      return;
+
+    }
+  }
+
+  //if user is authorized user then we will allow him to move forward
+}
+
+app.use(auth);
+
+//We want to do authentication right before accessing data.
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
