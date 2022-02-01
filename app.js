@@ -4,6 +4,9 @@ var path = require('path');
 var cookieParser = require('cookie-parser');  //already
 var logger = require('morgan');
 
+var session = require('express-session');
+var FileStore = require('session-file-store')(session);
+
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
@@ -35,13 +38,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser('12345-678890-09876-54321')); //secret key,used by our cookie to encrypt the information sent fron source to client
 
+
+app.use(session({
+  name: 'session-id',
+  secret: '12345-67890-09876-54321',
+  saveUninitialized: false,
+  resave: false,
+  store: new FileStore()
+}));
+
 function auth(req,res,next){
   //console.log(req.headers);
-  console.log(req.signedCookies);
-
+  //console.log(req.signedCookies);
+  console.log(req.session);
 
   //user field is not present in signed cookie,means the user has not authenticated yet.we expect the user to authenticate himeself.
-  if(!req.signedCookies.user){
+  if(!req.session.user){  //changed from req.signedCookies.user
 
     var authHeader= req.headers.authorization;
 
@@ -57,7 +69,8 @@ function auth(req,res,next){
     var pass=auth[1];
 
     if(user=='admin' && pass=='password'){ //Just for now at this stage,this is default
-      res.cookie('user','admin',{signed:true}); //setting the user name as admin
+      //res.cookie('user','admin',{signed:true}); //setting the user name as admin 
+      req.session.user='admin';
       next() //authorized and passing to next middle ware.
     }  
     else{
@@ -69,7 +82,7 @@ function auth(req,res,next){
     }
   }
   else{
-    if(req.signedCookies.user=='admin'){
+    if(req.session.user=='admin'){ //changed from req,signedCookies
       next();
     }
     else{  //the cookie is not valid,this generally doesn't happen. We just added for completeness.
