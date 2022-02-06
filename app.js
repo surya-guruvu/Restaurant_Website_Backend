@@ -7,8 +7,11 @@ var logger = require('morgan');
 var session = require('express-session');
 var FileStore = require('session-file-store')(session);
 
+
 var passport = require('passport');
 var authenticate=require('./authenticate');
+
+var config = require('./config');
 
 
 
@@ -22,7 +25,8 @@ var promoRouter = require('./routes/promoRouter');
 
 const mongoose = require('mongoose');
 
-const url='mongodb://localhost:27017/conFusion';
+const url=config.mongoUrl; //So, we are using config as centralised place for configuration.
+
 const connect=mongoose.connect(url);
 connect.then((db)=>{
   console.log("connected correctly to the server");
@@ -43,39 +47,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser('12345-678890-09876-54321')); //secret key,used by our cookie to encrypt the information sent fron source to client
 
-app.use(session({
-  name: 'session-id',
-  secret: '12345-67890-09876-54321',
-  saveUninitialized: false,
-  resave: false,
-  store: new FileStore()
-}));
 
 app.use(passport.initialize());  //If user is logged in 
-app.use(passport.session());
+//Removed Sessions for JWT
 
 
 app.use('/', indexRouter); //We want this withput authentication
 app.use('/users', usersRouter);
 
 
-function auth (req, res, next) {
-    console.log(req.session);
-
-// If req.user is presnt then passport has done authentication
-  if(!req.user) {
-    var err = new Error('You are not authenticated!');
-    err.status = 403;
-    return next(err);
-  }
-  else {
-    next();
-  }
-}
-  //if user is authorized user then we will allow him to move forward
-
-
-app.use(auth);
+//removed auth for JWT.
 
 //We want to do authentication right before accessing data.
 app.use(express.static(path.join(__dirname, 'public')));
@@ -84,6 +65,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 //Added By me
+//In this three, we can only keep authentication in put,post,deleted.
 app.use('/dishes', dishRouter);
 app.use('/promotions', promoRouter);
 app.use('/leaders', leaderRouter);
