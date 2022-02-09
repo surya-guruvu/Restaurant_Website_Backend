@@ -18,11 +18,10 @@ passport.deserializeUser(User.deserializeUser()); //This two are also added by t
 exports.getToken = function(user) {
     return jwt.sign(user, config.secretKey,
         {expiresIn: 3600});
-};
 
 var opts={}; //options
 
-opts.jwtFromRequest= ExtractJwt.fromAuthHeaderAsBearerToken(); //This add JW Tokens in all subsesquent requests Authheader.
+opts.jwtFromRequest= ExtractJwt.fromAuthHeaderAsBearerToken(); //This extracts JW Tokens in all subsesquent requests Authheader.
 opts.secretOrKey = config.secretKey;
 
 exports.jwtPassport = passport.use(new JwtStrategy(opts,

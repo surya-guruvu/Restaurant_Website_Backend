@@ -61,10 +61,9 @@ const commentSchema=new Schema({
         type: String,
         required: true
     },
-    author: {
-        type: String,
-        required:true
-
+    author: { //will have reference to user model, rather than author name
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 },{
     timestamps:true,
